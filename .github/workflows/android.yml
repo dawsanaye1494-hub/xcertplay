@@ -37,18 +37,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Prepare signing key (if secrets exist)
-        if: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+      - name: Prepare signing key
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          keystore_path="${RUNNER_TEMP}/xcertplay-release.jks"
-          printf '%s' "${RELEASE_KEYSTORE_BASE64}" | base64 --decode > "${keystore_path}"
-          echo "ANDROID_KEYSTORE_PATH=${keystore_path}" >> "${GITHUB_ENV}"
+          if [ -n "${RELEASE_KEYSTORE_BASE64:-}" ]; then
+            keystore_path="${RUNNER_TEMP}/xcertplay-release.jks"
+            printf '%s' "${RELEASE_KEYSTORE_BASE64}" | base64 --decode > "${keystore_path}"
+            echo "ANDROID_KEYSTORE_PATH=${keystore_path}" >> "${GITHUB_ENV}"
+            echo "Release key extracted successfully."
+          else
+            echo "No RELEASE_KEYSTORE_BASE64 secret found. Skipping keystore setup."
+          fi
 
       - name: Build Release APKs
         env:
